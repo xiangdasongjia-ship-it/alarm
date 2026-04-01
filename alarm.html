@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スパルタ目覚まし</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; margin: 0; overflow: hidden; transition: background 0.3s; }
+        .container { text-align: center; background: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 320px; position: relative; z-index: 10; }
+        #clock { font-size: 3.5rem; font-weight: bold; margin-bottom: 1rem; color: #34495e; }
+        input[type="time"] { font-size: 1.5rem; padding: 8px; border: 2px solid #bdc3c7; border-radius: 8px; margin-bottom: 1.5rem; width: 80%; }
+        
+        /* 逃走するボタンのスタイル */
+        #actionBtn { 
+            padding: 12px 24px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 50px; 
+            background: #3498db; color: white; transition: 0.1s; font-weight: bold;
+        }
+        .running { position: fixed; z-index: 999; min-width: 150px; background: #e74c3c !important; }
+
+        #mission-box { display: none; margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 10px; }
+        #question { font-size: 1.5rem; font-weight: bold; color: #e74c3c; margin-bottom: 10px; }
+        #answerInput { width: 60px; font-size: 1.2rem; padding: 5px; text-align: center; }
+        .status { margin-top: 15px; color: #7f8c8d; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="clock">00:00:00</div>
+    <input type="time" id="alarmTime">
+    
+    <div id="mission-box">
+        <div id="question">計算して！</div>
+        <input type="number" id="answerInput" placeholder="?">
+    </div>
+
+    <button id="actionBtn" onclick="handleClick()">アラームをセット</button>
+    <div id="status" class="status">二度寝は許しません</div>
+</div>
+
+<audio id="alarmSound" src="https://mixkit.co" loop></audio>
+
+<script>
+    let alarmTime = null;
+    let isAlarmSet = false;
+    let isRinging = false;
+    let correctAnswer = 0;
+    const sound = document.getElementById('alarmSound');
+    const btn = document.getElementById('actionBtn');
+
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('ja-JP', { hour12: false });
+        document.getElementById('clock').innerText = timeStr;
+
+        if (isAlarmSet && !isRinging) {
+            if (timeStr.substring(0, 5) === alarmTime) {
+                startAlarm();
+            }
+        }
+    }
+    setInterval(updateClock, 1000);
+
+    function handleClick() {
+        if (!isAlarmSet) {
+            setAlarm();
+        } else if (isRinging) {
+            checkMission();
+        }
+    }
+
+    function setAlarm() {
+        const input = document.getElementById('alarmTime');
+        if (!input.value) return alert("時間を決めてください");
+        alarmTime = input.value;
+        isAlarmSet = true;
+        btn.innerText = "解除（ミッション待機）";
+        btn.style.background = "#27ae60";
+        document.getElementById('status').innerText = alarmTime + " に刺客を送り込みます";
+        sound.play().then(() => { sound.pause(); }); // 音出し許可
+    }
+
+    function startAlarm() {
+        isRinging = true;
+        sound.play();
+        document.body.style.background = "#c0392b";
+        document.getElementById('mission-box').style.display = "block";
+        btn.innerText = "止めたければ捕まえろ！";
+        btn.classList.add('running');
+        generateQuestion();
+        
+        // ボタンを逃がすイベント
+        btn.onmouseover = moveButton;
+    }
+
+    function generateQuestion() {
+        const a = Math.floor(Math.random() * 20) + 10;
+        const b = Math.floor(Math.random() * 20) + 10;
+        correctAnswer = a + b;
+        document.getElementById('question').innerText = `${a} + ${b} = ?`;
+    }
+
+    function moveButton() {
+        if (!isRinging) return;
+        const x = Math.random() * (window.innerWidth - btn.clientWidth);
+        const y = Math.random() * (window.innerHeight - btn.clientHeight);
+        btn.style.left = x + 'px';
+        btn.style.top = y + 'px';
+    }
+
+    function checkMission() {
+        const userAns = document.getElementById('answerInput').value;
+        if (parseInt(userAns) === correctAnswer) {
+            stopAlarm();
+        } else {
+            alert("計算が違います！やり直し！");
+            generateQuestion();
+            document.getElementById('answerInput').value = "";
+        }
+    }
+
+    function stopAlarm() {
+        sound.pause();
+        isRinging = false;
+        isAlarmSet = false;
+        btn.classList.remove('running');
+        btn.onmouseover = null;
+        btn.style.position = "static";
+        btn.style.background = "#3498db";
+        btn.innerText = "アラームをセット";
+        document.getElementById('mission-box').style.display = "none";
+        document.body.style.background = "#2c3e50";
+        document.getElementById('status').innerText = "おはようございます。勝利です。";
+    }
+</script>
+</body>
+</html>
